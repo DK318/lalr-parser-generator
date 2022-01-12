@@ -1,0 +1,44 @@
+name:                lalr-parser-generator
+version:             0.1.0.0
+github:              "DK318/lalr-parser-generator"
+license:             BSD3
+author:              "Leonid Vasilev"
+maintainer:          "vasiklenka@gmail.com"
+copyright:           "2021 Leonid Vasilev"
+
+extra-source-files:
+- README.md
+
+description:         Please see the README on GitHub at <https://github.com/DK318/lalr-parser-generator#readme>
+
+dependencies:
+- base
+
+library:
+  source-dirs: src
+  dependencies:
+  - regex-tdfa
+  - containers
+  - transformers
+  - extra
+  - vector
+  - array
+  - text
+  - prettyprinter
+  - optparse-applicative
+  - fgl
+  - graphviz
+  - ilist
+
+executables:
+  parser-generator:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - lalr-parser-generator
+    - prettyprinter
+    - optparse-applicative

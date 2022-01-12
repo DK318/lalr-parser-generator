@@ -1,0 +1,62 @@
+numToRule :: M.Map Int Rule
+numToRule =
+  let lst = uncurry Rule <$> concatMap (\(from, to) -> [(from, to') | to' <- to]) (Bi.second S.toList <$> M.toList rules)
+      sz = length lst
+  in M.fromList $ zip [0..sz] lst
+
+letterToNum :: M.Map String Int
+letterToNum = M.fromList (zip termsAndNonTerms [0..])
+
+data Cell
+  = Shift !Int
+  | Reduce !Int
+  | Goto !Int
+  | Accept
+  | Error
+  deriving (Eq, Show)
+
+data Rule = Rule { getLeft :: String
+                 , getRight :: [String]
+                 } deriving (Show, Eq, Ord)
+
+data LR1Item = LR1Item { getRule :: Rule
+                       , getPos :: Int
+                       , getLookaheads :: S.Set String
+                       } deriving (Show, Eq, Ord)
+
+isGoto :: Cell -> Bool
+isGoto (Goto _) = True
+isGoto _ = False
+
+parseString str = do
+    st <- lift get
+    let (state, tree) = head st
+        curStateNum = lalrStateToNum M.! state
+        (curToken, val, xs) = nextToken str 
+        curTokenNum = letterToNum M.! curToken
+    case table V.! curStateNum V.! curTokenNum of
+      Shift n -> do
+        lift $ modify ((numToLalrState M.! n, (emptyAttrs, val)) :)
+        parseString xs
+      Reduce n -> do
+        let rule@(Rule from to) = numToRule M.! n
+            lenTo = length to
+            attrs = reverse $ snd <$> take lenTo st
+        lift $ modify (drop lenTo)
+        st' <- lift get
+        let newAttrs = reduceWithAttrs rule attrs
+            (state', _) = head st'
+            newStateNum = lalrStateToNum M.! state'
+            goto = table V.! newStateNum V.! (letterToNum M.! from)
+        unless (isGoto goto) $ throwE "Unexpected state"
+        let (Goto gotoStateNum) = goto
+            gotoState = numToLalrState M.! gotoStateNum
+        lift $ modify ((gotoState, (newAttrs, from)) :)
+        parseString str
+      Accept -> do
+        let rule@(Rule from to) = terminalRule
+            attrs = reverse $ snd <$> take (length to) st
+            resultAttrs = reduceWithAttrs rule attrs
+        return resultAttrs
+      Error -> throwE "Unexpected state"
+      Goto _ -> throwE "Unexpected state"

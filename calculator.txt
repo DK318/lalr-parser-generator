@@ -1,0 +1,35 @@
+{
+module Parser where
+}
+
+%attributetype { Attrs }
+%attribute value { Int }
+
+%ignorewhitespaces
+
+%name eval
+%start E value
+
+%token
+    +                           \+
+    -                           -
+    *                           \*
+    /                           \/
+    (                           \(
+    )                           \)
+    NUM                         [0-9]+
+%%
+
+E
+    : E "+" T { $$.value = $0.value + $2.value }
+    | E "-" T { $$.value = $0.value - $2.value }
+    | T       { $$.value = $0.value }
+
+T
+    : T "*" F { $$.value = $0.value * $2.value }
+    | T "/" F { $$.value = $0.value `div` $2.value }
+    | F       { $$.value = $0.value }
+
+F
+    : "(" E ")" { $$.value = $1.value }
+    | NUM        { $$.value = read $0 }

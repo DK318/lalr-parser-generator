@@ -1,0 +1,6 @@
+.history/
+.vscode/
+.stack-work/
+dist-newstyle/
+.hlint.yaml
+.stylish-haskell.yaml

@@ -1,0 +1,69 @@
+{
+module Parser where
+
+import TreeUtils
+}
+
+%attributetype { Attrs }
+%attribute res { Tree }
+
+%ignorewhitespaces
+
+%name functionParser
+%start Function res
+
+%token
+    fun                         fun\b
+    (                           \(
+    )                           \)
+    :                           :
+    ,                           ,
+    []                          \[\]
+    <                           <
+    >                           >
+    TYPE                        [A-Z][a-zA-Z]*
+    NAME                        [a-zA-Z]+
+%%
+
+Function
+    : "fun" NAME "(" Args ")" FunctionC { $$.res = Node NonTerminal 0 "function" [Node Terminal 0 "fun" [], Node Terminal 0 $1 [], Node Terminal 0 "(" [], $3.res, Node Terminal 0 ")" [], $5.res] }
+
+FunctionC
+    : {- empty -} { $$.res = Node NonTerminal 0 "function'" [Node Terminal 0 "eps" []] }
+    | ":" Type    { $$.res = Node NonTerminal 0 "function'" [Node Terminal 0 ":" [], $1.res] }
+
+Args
+    : Arg ArgsC   { $$.res = Node NonTerminal 0 "args" [$0.res, $1.res] }
+    | {- empty -} { $$.res = Node NonTerminal 0 "args" [Node Terminal 0 "eps" []] }
+
+ArgsC
+    : {- empty -}      { $$.res = Node NonTerminal 0 "args'" [Node Terminal 0 "eps" []] }
+    | "," ArgsNotEmpty { $$.res = Node NonTerminal 0 "args'" [Node Terminal 0 "," [], $1.res] }
+
+ArgsNotEmpty
+    : Arg ArgsNotEmptyC { $$.res = Node NonTerminal 0 "argsNotEmpty" [$0.res, $1.res] }
+
+ArgsNotEmptyC
+    : "," ArgsNotEmpty { $$.res = Node NonTerminal 0 "argsNotEmpty'" [Node Terminal 0 "," [], $1.res] }
+    | {- empty -}      { $$.res = Node NonTerminal 0 "argsNotEmpty'" [Node Terminal 0 "eps" []] }
+
+Arg
+    : NAME ":" Type { $$.res = Node NonTerminal 0 "arg" [Node Terminal 0 $0 [], Node Terminal 0 ":" [], $2.res] }
+
+Type
+    : TYPE Generic Arr { $$.res = Node NonTerminal 0 "Type" [Node Terminal 0 $0 [], $1.res, $2.res] }
+
+Generic
+    : "<" Types ">" { $$.res = Node NonTerminal 0 "Generic" [Node Terminal 0 "<" [], $1.res, Node Terminal 0 ">" []] }
+    | {- empty -}   { $$.res = Node NonTerminal 0 "Generic" [Node Terminal 0 "eps" []] }
+
+Types
+    : Type TypesC { $$.res = Node NonTerminal 0 "Types" [$0.res, $1.res] }
+
+TypesC
+    : "," Types { $$.res = Node NonTerminal 0 "TypesC" [Node Terminal 0 "," [], $1.res] }
+    | {- empty -}     { $$.res = Node NonTerminal 0 "TypesC" [Node Terminal 0 "eps" []] }
+
+Arr
+    : {- empty -} { $$.res = Node NonTerminal 0 "arr" [Node Terminal 0 "eps" []] }
+    | "[]" Arr    { $$.res = Node NonTerminal 0 "arr" [Node Terminal 0 "[]" [], $1.res] }
